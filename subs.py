@@ -1,6 +1,7 @@
 import urllib
 from xml.dom import minidom
 import sys
+import re
 
 # take the uri and try and find soemthing useful about it
         
@@ -14,11 +15,13 @@ import sys
 # find one in the region of the secs we have
 #print them out
 
-def get_subs(pid, num_secs):
+def get_subs(pid_or_url, num_secs):
      begins=[]
      begins_as_secs = []
      subs=[]
-
+     pid_match = re.match('.*\/([b-df-hj-np-tv-z][0-9b-df-hj-np-tv-z]{7,15}).*?',pid_or_url) 
+     pid = pid_match.group(1)
+     print "pid",pid
      num_secs = float(num_secs)
      u = "http://channelography.rattlecentral.com/programmes/"+pid+"/captions.xml"
      data = urllib.urlopen(u).read()    
