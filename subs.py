@@ -3,6 +3,7 @@ from xml.dom import minidom
 import sys
 import re
 import json
+import unicodedata
 
 
 # take the uri and try and find soemthing useful about it
@@ -149,9 +150,10 @@ def get_subs(pid_or_url, num_secs):
                  print subs[sub_index+1]
                  substext= substext+subs[sub_index+1]
               print "]]"   
-              u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+substext
-              data6 = urllib.urlopen(u6).read()
-              json_text = json.loads(data6)              
+              # get lupedia entities
+              json_text = get_entities(substext)
+              if(json_text==None or len(json_text)==0):
+                 print "No entities found"             
               for x in json_text:
                  for y in x:
                     for k, v in y.items():
@@ -166,6 +168,13 @@ def get_subs(pid_or_url, num_secs):
                           print "class",v
            else:
               print "No subtitles found for",pid
+
+def get_entities(substext):
+   ascii_substext = unicodedata.normalize('NFKD', substext).encode('ascii','ignore')
+   u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+ascii_substext
+   data6 = urllib.urlopen(u6).read()
+   json_text = json.loads(data6)              
+   return json_text
 
 
 if len(sys.argv) > 2:
