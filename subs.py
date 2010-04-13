@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import urllib
+import urllib2
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 import sys
 import re
 import json
@@ -55,9 +57,11 @@ def get_subs(pid_or_url, num_secs,num_subs):
        u2 = links[0].attributes["href"].value
        print "iPlayer subs url",u2
        data2 = urllib.urlopen(u2).read()    
-       xmldoc2 = minidom.parseString(data2)
-       plist = xmldoc2.getElementsByTagNameNS('http://www.w3.org/2006/10/ttaf1','p')
-
+       try:
+          xmldoc2 = minidom.parseString(data2)
+          plist = xmldoc2.getElementsByTagNameNS('http://www.w3.org/2006/10/ttaf1','p')
+       except ExpatError, e:
+          print "Error:",e
      else:
 # no channelography url found
 # rdf url
@@ -251,7 +255,10 @@ def get_regexed_entities(substext):
       if li!="":
          stopList.append(li)
 
-   words = re.findall("(([A-Z][a-z]*[ |  |,|.]){1,})",substext) 
+   substext = re.sub("  "," ",substext)
+   substext = re.sub("   "," ",substext)
+
+   words = re.findall("(([A-Z][a-z]*[ |,|.]){1,})",substext)
 
    wordslist = []
    for x in words:
@@ -274,15 +281,16 @@ def get_regexed_entities(substext):
       if term_name!="" and term_name not in final_wordslist:
 # now do a dbpedia lookup
         tn = re.sub(" ","_",term_name)
-        term_url = "http://dbpedia.org/data/"+tn+".rdf"
+        term_url = "http://dbpedia.org/page/"+tn
+        req = urllib2.Request(term_url)
         try:
-           u = urllib.urlopen(term_url)
+           u = urllib2.urlopen(req)
            if "dbpedia:"+tn not in final_wordslist:
               final_wordslist.append("dbpedia:"+tn)
-        except URLError, e:
+        except urllib2.HTTPError, e:
+#          print e.code
            if term_name not in final_wordslist:
               final_wordslist.append(term_name)
-
 
 #  print "XXXX",final_wordslist
    return final_wordslist
