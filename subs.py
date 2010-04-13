@@ -26,7 +26,8 @@ def get_subs(pid_or_url, num_secs,num_subs):
      begins=[]
      begins_as_secs = []
      subs=[]
-     pid_match = re.match('.*\/([b-df-hj-np-tv-z][0-9b-df-hj-np-tv-z]{7,15}).*?',pid_or_url) 
+     print "got pid",pid_or_url
+     pid_match = re.match('.*?\/?([b-df-hj-np-tv-z][0-9b-df-hj-np-tv-z]{7,15}).*?',pid_or_url) 
      pid = pid_match.group(1)
      print "Looking for subs for ",pid
      num_secs = float(num_secs)
