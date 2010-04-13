@@ -1,3 +1,8 @@
 This uses public subtitles data and allows you to find subtitles by BBC 
-PID plus number of seconds in. Just a first pass at the moment.
+PID plus number of seconds in. It uses Chanelography urls to find the 
+iPlayer ones or if that fails (which is sometimes does for new 
+programmes), looks to iPlayer directly. We can't use the Channelography 
+ones as they've no timestamps.
 
+It now does a lookup for entities on Lupedia and using a regex and 
+dbpedia for comparison.

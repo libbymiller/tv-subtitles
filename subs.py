@@ -18,7 +18,8 @@ import unicodedata
 # find one in the region of the secs we have
 #print them out
 
-def get_subs(pid_or_url, num_secs):
+def get_subs(pid_or_url, num_secs,num_subs):
+     num_subs = int(num_subs)
      use_channelography=True
      begins=[]
      begins_as_secs = []
@@ -139,47 +140,157 @@ def get_subs(pid_or_url, num_secs):
         else:
            if len(begins_as_secs) > 0:
               substext=""
-#              print "subs length is:",len(subs),"sub index is:",sub_index
-#              print "Subtitle near",num_secs,"in was:",subs[sub_index]
-#              print "Previous subtitle was:",subs[sub_index-1]
+#             print "subs length is:",len(subs),"sub index is:",sub_index
               print "[["
-              print subs[sub_index-1]," ",subs[sub_index]
-              substext= substext+subs[sub_index-1]
-              substext= substext+subs[sub_index]
-              if(len(subs)>sub_index+1):
-                 print subs[sub_index+1]
-                 substext= substext+subs[sub_index+1]
+# get the subs around this point
+              c = int( num_subs / 2 )
+              min_sub = sub_index - c
+              r = num_subs % 2
+              max_sub = sub_index + c
+              if (r > 0):
+                 max_sub = max_sub + 1
+# if min_sub < 0 or 
+# if max_sub is greater than len(subs)
+# sort it out!
+              if min_sub < 0:
+                 diff = min_sub
+                 max_sub = min_sub + diff
+              if max_sub > len(subs):
+                 diff = len(subs) - max_sub
+                 max_sub = len(subs) 
+
+              for i in range(min_sub,max_sub):
+                  print i," ",subs[i]
+                  substext = substext + " " + subs[i]
+
               print "]]"   
+
               # get lupedia entities
-              json_text = get_entities(substext)
-              if(json_text==None or len(json_text)==0):
+
+              print "\nLupedia entities:"
+              lup_data = get_lupedia_entities(substext)
+
+              if(lup_data==None or len(lup_data)==0):
+                 print "No Lupedia entities found"             
+              for r in lup_data:
+                 print "tag",r
+
+              print "\nRegexed entities:"
+              # get regexed entities
+              regexed_entities = get_regexed_entities(substext)
+
+              if(regexed_entities==None or len(regexed_entities)==0):
                  print "No entities found"             
-              for x in json_text:
-                 for y in x:
-                    for k, v in y.items():
-                       #print "k",k,"v",v
-                       if k=="instanceUri":
-                          tag = v
-                          tag = re.sub("http://","",tag)
-                          tag = re.sub(".org",":",tag)
-                          tag = re.sub("/resource/","",tag)
-                          print "tag",tag
-                       if k=="instanceClass":
-                          print "class",v
+              for r in regexed_entities:
+                 print "tag",r
+
            else:
               print "No subtitles found for",pid
 
-def get_entities(substext):
-   ascii_substext = unicodedata.normalize('NFKD', substext).encode('ascii','ignore')
+
+# Ask Lupedia for entities
+
+def get_lupedia_entities(substext):
+
+# Read items from stoplist
+   f = open('stopList.txt', 'r')
+   stopList = []
+   for line in f:
+      li = re.sub("\n","", line)
+      if li!="":
+         stopList.append(li)
+
+# experimentally remove the stop list words
+# note this is a diferent technique to with the regex, which removes them after terms are found
+
+   words = []
+   
+   arr = substext.split(" ")
+   for x in arr:
+      if x not in stopList:
+         words.append(x)
+
+   substext2 = " ".join(words)
+   substext2 = unicode(substext2)
+
+# lupedia only accepts ascii 
+   ascii_substext = unicodedata.normalize('NFKD', substext2).encode('ascii','ignore')
    u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+ascii_substext
    data6 = urllib.urlopen(u6).read()
    json_text = json.loads(data6)              
-   return json_text
+
+   final_words = []
+   for x in json_text:
+      for y in x:
+         for k, v in y.items():
+            #print "k",k,"v",v
+            if k=="instanceUri":
+               tag = v
+               tag = re.sub("http://","",tag)
+               tag = re.sub(".org",":",tag)
+               tag = re.sub("/resource/","",tag)
+               final_words.append(tag)
+               if k=="instanceClass":
+                  print "class",v
+
+   return final_words
+
+
+# Baseline extra-simple regex-based entity regognition
+
+def get_regexed_entities(substext):
+
+# Read items from stoplist
+   f = open('stopList.txt', 'r')
+   stopList = []
+   for line in f:
+      li = re.sub("\n","", line)
+      if li!="":
+         stopList.append(li)
+
+   words = re.findall("(([A-Z][a-z]*[ |  |,|.]){1,})",substext) 
+
+   wordslist = []
+   for x in words:
+     w = x[0]
+     w = re.sub(",","",w)
+     w = re.sub("\.","",w)
+     wordslist.append(w)
+
+# remove stop words
+   final_wordslist= []
+
+   for x in wordslist:
+      arr = x.split(" ")
+      for y in arr:
+         z = y.lower()
+         if z in stopList:
+            x = re.sub(y, "", x)
+      term_name = re.sub("^\s*","",x)
+      term_name = re.sub("\s*$","",term_name)
+      if term_name!="" and term_name not in final_wordslist:
+# now do a dbpedia lookup
+        tn = re.sub(" ","_",term_name)
+        term_url = "http://dbpedia.org/data/"+tn+".rdf"
+        try:
+           u = urllib.urlopen(term_url)
+           if "dbpedia:"+tn not in final_wordslist:
+              final_wordslist.append("dbpedia:"+tn)
+        except URLError, e:
+           if term_name not in final_wordslist:
+              final_wordslist.append(term_name)
+
+
+#  print "XXXX",final_wordslist
+   return final_wordslist
 
 
 if len(sys.argv) > 2:
-   get_subs(sys.argv[1],sys.argv[2])
+   if len(sys.argv) == 3:
+      get_subs(sys.argv[1],sys.argv[2],3)
+   if len(sys.argv) > 3:
+      get_subs(sys.argv[1],sys.argv[2],sys.argv[3])
 else:
-   print "Usage: python subs.py pid_or_url secs"
+   print "Usage: python subs.py pid_or_url secs [num_subs]"
    print "e.g. python subs.py b00ncr13 200"
-   print "or python subs.py http://www.bbc.co.uk/programmes/b00s0vrj.rdf 500"
+   print "or python subs.py http://www.bbc.co.uk/programmes/b00s0vrj.rdf 500 4"
