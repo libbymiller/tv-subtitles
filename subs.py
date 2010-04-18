@@ -28,6 +28,7 @@ class Subs():
      pass
 
   def get_subs(self,pid_or_url, num_secs,num_subs):
+     to_return=[]
      num_subs = int(num_subs)
      use_channelography=True
      begins=[]
@@ -176,29 +177,33 @@ class Subs():
                   substext = substext + " " + subs[i]
 
               print "]]"   
+              to_return.append(substext)
 
               # get lupedia entities
 
               print "\nLupedia entities:"
               lup_data = self.get_lupedia_entities(substext)
-
+              lup_arr=[]
               if(lup_data==None or len(lup_data)==0):
                  print "No Lupedia entities found"             
               for r in lup_data:
                  print "tag",r
-
+                 lup_arr.append(r)
               print "\nRegexed entities:"
               # get regexed entities
+              regex_arr=[]
               regexed_entities = self.get_regexed_entities(substext)
-
+            
               if(regexed_entities==None or len(regexed_entities)==0):
                  print "No entities found"             
               for r in regexed_entities:
                  print "tag",r
-
+                 regex_arr.append(r)                 
+              to_return.append(lup_arr)
+              to_return.append(regex_arr)
            else:
               print "No subtitles found for",pid
-
+     return to_return
 
 # Ask Lupedia for entities
 
@@ -304,9 +309,9 @@ class Subs():
 if len(sys.argv) > 2:
    s = Subs()
    if len(sys.argv) == 3:
-      s.get_subs(sys.argv[1],sys.argv[2],3)
+      print s.get_subs(sys.argv[1],sys.argv[2],3)
    if len(sys.argv) > 3:
-      s.get_subs(sys.argv[1],sys.argv[2],sys.argv[3])
+      print s.get_subs(sys.argv[1],sys.argv[2],sys.argv[3])
 else:
    print "Usage: python subs.py pid_or_url secs [num_subs]"
    print "e.g. python subs.py b00ncr13 200"
