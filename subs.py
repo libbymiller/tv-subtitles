@@ -22,7 +22,12 @@ import unicodedata
 # find one in the region of the secs we have
 #print them out
 
-def get_subs(pid_or_url, num_secs,num_subs):
+class Subs():
+
+  def __init__(self):
+     pass
+
+  def get_subs(self,pid_or_url, num_secs,num_subs):
      num_subs = int(num_subs)
      use_channelography=True
      begins=[]
@@ -175,7 +180,7 @@ def get_subs(pid_or_url, num_secs,num_subs):
               # get lupedia entities
 
               print "\nLupedia entities:"
-              lup_data = get_lupedia_entities(substext)
+              lup_data = self.get_lupedia_entities(substext)
 
               if(lup_data==None or len(lup_data)==0):
                  print "No Lupedia entities found"             
@@ -184,7 +189,7 @@ def get_subs(pid_or_url, num_secs,num_subs):
 
               print "\nRegexed entities:"
               # get regexed entities
-              regexed_entities = get_regexed_entities(substext)
+              regexed_entities = self.get_regexed_entities(substext)
 
               if(regexed_entities==None or len(regexed_entities)==0):
                  print "No entities found"             
@@ -197,110 +202,111 @@ def get_subs(pid_or_url, num_secs,num_subs):
 
 # Ask Lupedia for entities
 
-def get_lupedia_entities(substext):
+  def get_lupedia_entities(self,substext):
 
 # Read items from stoplist
-   f = open('stopList.txt', 'r')
-   stopList = []
-   for line in f:
-      li = re.sub("\n","", line)
-      if li!="":
-         stopList.append(li)
+     f = open('stopList.txt', 'r')
+     stopList = []
+     for line in f:
+        li = re.sub("\n","", line)
+        if li!="":
+           stopList.append(li)
 
 # experimentally remove the stop list words
 # note this is a diferent technique to with the regex, which removes them after terms are found
 
-   words = []
-   
-   arr = substext.split(" ")
-   for x in arr:
-      if x not in stopList:
-         words.append(x)
+     words = []
+    
+     arr = substext.split(" ")
+     for x in arr:
+        if x not in stopList:
+           words.append(x)
 
-   substext2 = " ".join(words)
-   substext2 = unicode(substext2)
+     substext2 = " ".join(words)
+     substext2 = unicode(substext2)
 
 # lupedia only accepts ascii 
-   ascii_substext = unicodedata.normalize('NFKD', substext2).encode('ascii','ignore')
-   u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+ascii_substext
-   data6 = urllib.urlopen(u6).read()
-   json_text = json.loads(data6)              
+     ascii_substext = unicodedata.normalize('NFKD', substext2).encode('ascii','ignore')
+     u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+ascii_substext
+     data6 = urllib.urlopen(u6).read()
+     json_text = json.loads(data6)              
 
-   final_words = []
-   for x in json_text:
-      for y in x:
-         for k, v in y.items():
-            #print "k",k,"v",v
-            if k=="instanceUri":
-               tag = v
-               tag = re.sub("http://","",tag)
-               tag = re.sub(".org",":",tag)
-               tag = re.sub("/resource/","",tag)
-               final_words.append(tag)
-               if k=="instanceClass":
-                  print "class",v
+     final_words = []
+     for x in json_text:
+        for y in x:
+           for k, v in y.items():
+              #print "k",k,"v",v
+              if k=="instanceUri":
+                 tag = v
+                 tag = re.sub("http://","",tag)
+                 tag = re.sub(".org",":",tag)
+                 tag = re.sub("/resource/","",tag)
+                 final_words.append(tag)
+                 if k=="instanceClass":
+                    print "class",v
 
-   return final_words
+     return final_words
 
 
 # Baseline extra-simple regex-based entity regognition
 
-def get_regexed_entities(substext):
+  def get_regexed_entities(self,substext):
 
 # Read items from stoplist
-   f = open('stopList.txt', 'r')
-   stopList = []
-   for line in f:
-      li = re.sub("\n","", line)
-      if li!="":
-         stopList.append(li)
+     f = open('stopList.txt', 'r')
+     stopList = []
+     for line in f:
+        li = re.sub("\n","", line)
+        if li!="":
+           stopList.append(li)
 
-   substext = re.sub("  "," ",substext)
-   substext = re.sub("   "," ",substext)
+     substext = re.sub("  "," ",substext)
+     substext = re.sub("   "," ",substext)
 
-   words = re.findall("(([A-Z][a-z]*[ |,|.]){1,})",substext)
+     words = re.findall("(([A-Z][a-z]*[ |,|.]){1,})",substext)
 
-   wordslist = []
-   for x in words:
-     w = x[0]
-     w = re.sub(",","",w)
-     w = re.sub("\.","",w)
-     wordslist.append(w)
+     wordslist = []
+     for x in words:
+       w = x[0]
+       w = re.sub(",","",w)
+       w = re.sub("\.","",w)
+       wordslist.append(w)
 
 # remove stop words
-   final_wordslist= []
+     final_wordslist= []
 
-   for x in wordslist:
-      arr = x.split(" ")
-      for y in arr:
-         z = y.lower()
-         if z in stopList:
-            x = re.sub(y, "", x)
-      term_name = re.sub("^\s*","",x)
-      term_name = re.sub("\s*$","",term_name)
-      if term_name!="" and term_name not in final_wordslist:
+     for x in wordslist:
+        arr = x.split(" ")
+        for y in arr:
+           z = y.lower()
+           if z in stopList:
+              x = re.sub(y, "", x)
+        term_name = re.sub("^\s*","",x)
+        term_name = re.sub("\s*$","",term_name)
+        if term_name!="" and term_name not in final_wordslist:
 # now do a dbpedia lookup
-        tn = re.sub(" ","_",term_name)
-        term_url = "http://dbpedia.org/page/"+tn
-        req = urllib2.Request(term_url)
-        try:
-           u = urllib2.urlopen(req)
-           if "dbpedia:"+tn not in final_wordslist:
-              final_wordslist.append("dbpedia:"+tn)
-        except urllib2.HTTPError, e:
-#          print e.code
-           if term_name not in final_wordslist:
-              final_wordslist.append(term_name)
+          tn = re.sub(" ","_",term_name)
+          term_url = "http://dbpedia.org/page/"+tn
+          req = urllib2.Request(term_url)
+          try:
+             u = urllib2.urlopen(req)
+             if "dbpedia:"+tn not in final_wordslist:
+                final_wordslist.append("dbpedia:"+tn)
+          except urllib2.HTTPError, e:
+#            print e.code
+             if term_name not in final_wordslist:
+                final_wordslist.append(term_name)
 
 #  print "XXXX",final_wordslist
-   return final_wordslist
+     return final_wordslist
 
 
 if len(sys.argv) > 2:
+   s = Subs()
    if len(sys.argv) == 3:
-      get_subs(sys.argv[1],sys.argv[2],3)
+      s.get_subs(sys.argv[1],sys.argv[2],3)
    if len(sys.argv) > 3:
-      get_subs(sys.argv[1],sys.argv[2],sys.argv[3])
+      s.get_subs(sys.argv[1],sys.argv[2],sys.argv[3])
 else:
    print "Usage: python subs.py pid_or_url secs [num_subs]"
    print "e.g. python subs.py b00ncr13 200"
