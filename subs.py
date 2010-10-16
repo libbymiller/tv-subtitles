@@ -232,23 +232,20 @@ class Subs():
 
 # lupedia only accepts ascii 
      ascii_substext = unicodedata.normalize('NFKD', substext2).encode('ascii','ignore')
-     u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+ascii_substext
+     u6 = "http://lupedia.ontotext.com/lookup/text2json?lookupText="+urllib.quote(ascii_substext)
+     print u6
      data6 = urllib.urlopen(u6).read()
      json_text = json.loads(data6)              
 
      final_words = []
      for x in json_text:
-        for y in x:
-           for k, v in y.items():
-              #print "k",k,"v",v
-              if k=="instanceUri":
-                 tag = v
+        i = x['instanceUri']
+        if(i):
+                 tag = i
                  tag = re.sub("http://","",tag)
                  tag = re.sub(".org",":",tag)
                  tag = re.sub("/resource/","",tag)
                  final_words.append(tag)
-                 if k=="instanceClass":
-                    print "class",v
 
      return final_words
 
