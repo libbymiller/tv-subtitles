@@ -6,3 +6,5 @@ ones as they've no timestamps.
 
 It now does a lookup for entities on Lupedia and using a regex and 
 dbpedia for comparison.
+
+Update - it seems now only to work for programmes currently available on iplayer.
